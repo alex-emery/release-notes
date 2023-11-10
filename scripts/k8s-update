@@ -1,0 +1,27 @@
+#!/bin/sh
+# Used to update image variables in kustomization.yaml for dev/staging/prod
+# Add to $PATH and run `k8s-update` in the k8s-engine repo.
+# Requires gum and yq be installed
+# `brew install gum yq`
+
+set -e
+
+echo "Select env to update"
+env=$(gum choose "dev" "stage" "prod")
+
+namespaces=$(ls -d -- ./environments/engine-${env}/baseline/wb-* | cut -f 5 -d '/')
+
+selected_ns=$(echo ${namespaces} | tr " " "\n" | gum filter --header "Filter namespace" --header.foreground="#FFF")
+
+filepath="environments/engine-${env}/baseline/${selected_ns}/kustomization.yaml"
+
+selected_name=$(yq ".images.[].name" ${filepath} | gum filter --header "Filter image name" --header.foreground="#FFF" )
+
+current_version=$(NAME=${selected_name} yq '.images.[] | select(.name==env(NAME)) | .newTag' ${filepath})
+line_number=$(NAME=${selected_name} yq '.images.[] | select(.name==env(NAME)) | .newTag | line' ${filepath})
+
+new_version=$(gum input --header "Input new version" --placeholder "${current_version}")
+
+gum confirm "Update ${env} ${selected_ns} ${selected_name} from ${current_version} to ${new_version}?" && sed -i '' "${line_number}s/${current_version}/${new_version}/" ${filepath}
+
+git add ${filepath}
