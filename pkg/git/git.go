@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/go-github/v56/github"
@@ -20,6 +21,10 @@ import (
 type Auth struct {
 	Keys *ssh.PublicKeys
 	Path string
+}
+
+func (g *Auth) OpenExisting(repo string) (*git.Repository, error) {
+	return git.PlainOpen(repo)
 }
 
 func (g *Auth) CloneRepo(repo string) (*git.Repository, error) {
@@ -77,6 +82,24 @@ func GetReleaseForTags(client *github.Client, repo, tag string) string {
 	return tagResp.GetBody()
 }
 
+func CompareTags(tag1, tag2 string) (int, error) {
+	// strip off any v prefix
+	tag1 = strings.TrimPrefix(tag1, "v")
+	tag2 = strings.TrimPrefix(tag2, "v")
+
+	v1, err := semver.NewVersion(tag1)
+	if err != nil {
+		return 0, err
+	}
+
+	v2, err := semver.NewVersion(tag2)
+	if err != nil {
+		return 0, err
+	}
+
+	return v1.Compare(v2), nil
+}
+
 func GetCommitsBetweenTags(r *git.Repository, tag1, tag2 string) ([]object.Commit, error) {
 	tagIter, err := r.Tags()
 	if err != nil {
@@ -85,6 +108,16 @@ func GetCommitsBetweenTags(r *git.Repository, tag1, tag2 string) ([]object.Commi
 
 	startSHA := plumbing.Hash{}
 	endSHA := plumbing.Hash{}
+
+	// only get commits if tag1 < tag2
+	val, err := CompareTags(tag1, tag2)
+	if err != nil {
+		return nil, err
+	}
+
+	if val != -1 {
+		return nil, fmt.Errorf("tag1: %s must be less than tag2: %s", tag1, tag2)
+	}
 
 	if !strings.HasPrefix(tag1, "v") {
 		tag1 = "v" + tag1
@@ -123,16 +156,12 @@ func GetCommitsBetweenTags(r *git.Repository, tag1, tag2 string) ([]object.Commi
 		return nil, err
 	}
 
-	foundSHA := false
 	var commits = []object.Commit{}
-	err = cIter.ForEach(func(c *object.Commit) error { //TODO: this is actually pretty ineffective
-		if foundSHA {
-			return nil
-		}
+	err = cIter.ForEach(func(c *object.Commit) error {
 		if c.Hash.String() == startSHA.String() {
-			foundSHA = true
-			return nil
+			return storer.ErrStop
 		}
+
 		commits = append(commits, *c)
 		return nil
 	})
