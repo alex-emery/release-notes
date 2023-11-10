@@ -86,6 +86,14 @@ func GetCommitsBetweenTags(r *git.Repository, tag1, tag2 string) ([]object.Commi
 	startSHA := plumbing.Hash{}
 	endSHA := plumbing.Hash{}
 
+	if !strings.HasPrefix(tag1, "v") {
+		tag1 = "v" + tag1
+	}
+	if !strings.HasPrefix(tag2, "v") {
+		tag2 = "v" + tag2
+	}
+
+	// check if the tag is missing a v prefix
 	err = tagIter.ForEach(func(r *plumbing.Reference) error {
 		if r.Name().Short() == tag1 {
 			startSHA = r.Hash()
@@ -99,8 +107,16 @@ func GetCommitsBetweenTags(r *git.Repository, tag1, tag2 string) ([]object.Commi
 		return nil, err
 	}
 
+	if startSHA.IsZero() {
+		return nil, fmt.Errorf("failed to find start SHA: %s", tag1)
+	}
+
+	if endSHA.IsZero() {
+		return nil, fmt.Errorf("failed to find end SHA: %s", tag2)
+	}
+
 	cIter, err := r.Log(&git.LogOptions{
-		From: startSHA,
+		From: endSHA,
 	})
 
 	if err != nil {
@@ -109,11 +125,11 @@ func GetCommitsBetweenTags(r *git.Repository, tag1, tag2 string) ([]object.Commi
 
 	foundSHA := false
 	var commits = []object.Commit{}
-	err = cIter.ForEach(func(c *object.Commit) error {
+	err = cIter.ForEach(func(c *object.Commit) error { //TODO: this is actually pretty ineffective
 		if foundSHA {
 			return nil
 		}
-		if c.Hash.String() == endSHA.String() {
+		if c.Hash.String() == startSHA.String() {
 			foundSHA = true
 			return nil
 		}
