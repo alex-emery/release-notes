@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/alex-emery/release-notes/pkg/git"
 	jira "github.com/andygrunwald/go-jira/v2/cloud"
@@ -16,13 +17,23 @@ type ReleaseNote struct {
 }
 
 func (rn ReleaseNote) String() string {
-	result := "### " + rn.RepoName + "\n"
+	result := "### " + formatRepoName(rn.RepoName) + "\n"
 	for _, issue := range rn.Issues {
 		line := "- [" + issue.Key + "]" + "(https://adarga.atlassian.net/browse/" + issue.Key + ") - " + issue.Fields.Summary + "\n"
 		result += line
 	}
 
 	return result
+}
+
+// takes string-like-this and make it
+// String Like This
+func formatRepoName(s string) string {
+	words := strings.Split(s, "-")
+	for i, word := range words {
+		words[i] = strings.Title(word)
+	}
+	return strings.Join(words, " ")
 }
 
 func CreateReleaseNotesForRepo(ctx context.Context, logger *zap.Logger, jiraClient *jira.Client, gitAuth *git.Auth, repoName string, tag1 string, tag2 string) ReleaseNote {
