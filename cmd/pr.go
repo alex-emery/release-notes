@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -19,6 +20,9 @@ import (
 func createPrCmd(privatekey *string) *cobra.Command {
 	var sourceBranch = new(string)
 	var targetBranch = new(string)
+
+	var repoPath = new(string)
+
 	var jiraHost = new(string)
 
 	var prCmd = &cobra.Command{
@@ -47,12 +51,16 @@ func createPrCmd(privatekey *string) *cobra.Command {
 				logger.Fatal("failed to create jira client", zap.Error(err))
 			}
 
-			repo, err := gitAuth.CloneRepo("k8s-engine")
+			// repo, err := gitAuth.CloneRepo("k8s-engine")
+			repo, err := gitAuth.OpenExisting(*repoPath)
 			if err != nil {
 				logger.Fatal("failed to clone repo", zap.Error(err))
 			}
 
-			diffs, err := git.GetImagesFromK8s(repo, *sourceBranch, *targetBranch)
+			sourceRefs := fmt.Sprintf("refs/heads/%s", *sourceBranch)
+			targetRefs := fmt.Sprintf("refs/heads/%s", *targetBranch)
+
+			diffs, err := git.GetImagesFromK8s(repo, *&sourceRefs, *&targetRefs)
 			if err != nil {
 				logger.Fatal("failed to get images from k8s", zap.Error(err))
 			}
@@ -103,13 +111,11 @@ func createPrCmd(privatekey *string) *cobra.Command {
 		},
 	}
 
-	prCmd.Flags().StringVarP(sourceBranch, "source", "s", "", "source branch")
+	prCmd.Flags().StringVarP(sourceBranch, "source", "s", "main", "source branch")
 	prCmd.Flags().StringVarP(targetBranch, "target", "t", "", "target branch")
+	prCmd.Flags().StringVar(repoPath, "path", "", "path to the local k8s-engine repo")
 
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
-	if err := prCmd.MarkFlagRequired("source"); err != nil {
-		log.Fatal(err)
-	}
 
 	if err := prCmd.MarkFlagRequired("target"); err != nil {
 		log.Fatal(err)

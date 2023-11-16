@@ -180,9 +180,12 @@ func GetTicketFromCommitMessage(message string) string {
 	return re.FindString(message)
 }
 
+// Bundles commits to the respective ticket
+type IssueCommitMap map[string][]object.Commit
+
 // Gets all unique tickets from a list of commits
-func CommitsToIssues(commits []object.Commit) []string {
-	commitMap := make(map[string]struct{})
+func CommitsToIssues(commits []object.Commit) IssueCommitMap {
+	commitMap := make(IssueCommitMap)
 	for _, commit := range commits {
 		line := strings.Split(commit.Message, "\n")
 		ticket := GetTicketFromCommitMessage(line[0])
@@ -190,15 +193,13 @@ func CommitsToIssues(commits []object.Commit) []string {
 			continue
 		}
 
-		commitMap[ticket] = struct{}{}
+		if _, ok := commitMap[ticket]; !ok {
+			commitMap[ticket] = []object.Commit{}
+		}
+		commitMap[ticket] = append(commitMap[ticket], commit)
 	}
 
-	res := make([]string, 0, len(commitMap))
-
-	for k := range commitMap {
-		res = append(res, k)
-	}
-	return res
+	return commitMap
 }
 
 func ExtractRepo(line string) string {
@@ -217,4 +218,13 @@ func ExtractRepo(line string) string {
 	}
 
 	return result["repo"]
+}
+
+func ExtractPR(s string) string {
+	re := regexp.MustCompile(`\(#(\d+)\)`)
+	match := re.FindStringSubmatch(s)
+	if len(match) > 1 {
+		return match[1]
+	}
+	return ""
 }

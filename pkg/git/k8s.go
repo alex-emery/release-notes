@@ -13,9 +13,7 @@ import (
 
 // grabs images and tags from the k8s-engine repo and only
 // from kustomization.yaml files.
-func GetImagesFromK8s(r *git.Repository, sourceBranch, targetBranch string) ([]ImageDiff, error) {
-	sourceRefs := fmt.Sprintf("refs/remotes/origin/%s", sourceBranch)
-	targetRefs := fmt.Sprintf("refs/remotes/origin/%s", targetBranch)
+func GetImagesFromK8s(r *git.Repository, sourceRefs, targetRefs string) ([]ImageDiff, error) {
 	// Get the worktree
 	w, err := r.Worktree()
 	if err != nil {

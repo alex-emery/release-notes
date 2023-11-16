@@ -61,3 +61,24 @@ func TestExtractRepo(t *testing.T) {
 	}
 
 }
+
+func TestExtractPR(t *testing.T) {
+	testCases := []struct {
+		line     string
+		expected string
+	}{
+		{
+			line:     "feat(APP-12505): support answer rating (#174)",
+			expected: "174",
+		},
+		{
+			line:     "feat(APP-12505): support answer rating",
+			expected: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		actual := git.ExtractPR(tc.line)
+		assert.Equal(t, tc.expected, actual)
+	}
+}

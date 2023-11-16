@@ -1,0 +1,6 @@
+### {{.RepoName}}
+{{range .Issues}}
+- [{{.ID}}](https://adarga.atlassian.net/browse/{{.ID}})
+    - Labels: {{range .Labels}}{{.}}{{end}}
+    - PRs: {{range .PRs}}[(#{{.}})]({{$.RepoURL}}/pull/{{.}}){{end}}
+{{end}}

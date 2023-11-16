@@ -1,29 +1,79 @@
 package notes
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
 	"log"
 	"strings"
 
 	"github.com/alex-emery/release-notes/pkg/git"
 	jira "github.com/andygrunwald/go-jira/v2/cloud"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"go.uber.org/zap"
 )
 
+type IssueCommitMap map[*jira.Issue][]object.Commit
 type ReleaseNote struct {
 	RepoName string
-	Issues   []*jira.Issue
+	Issues   IssueCommitMap
 }
 
+// all the fields for printing the template.
+type PRTemplate struct {
+	RepoName string
+	RepoURL  string
+	Issues   []IssueTemplate
+}
+
+type IssueTemplate struct {
+	ID      string
+	Summary string
+	Labels  []string
+	PRs     []string
+}
+
+// Print issue.
 func (rn ReleaseNote) String() string {
-	result := "### " + formatRepoName(rn.RepoName) + "\n"
-	for _, issue := range rn.Issues {
-		line := "- [" + issue.Key + "]" + "(https://adarga.atlassian.net/browse/" + issue.Key + ") - " + issue.Fields.Summary + "\n"
-		result += line
+	pr := PRTemplate{
+		RepoURL:  "https://github.com/Adarga-Ltd/" + rn.RepoName,
+		RepoName: formatRepoName(rn.RepoName),
+		Issues:   make([]IssueTemplate, 0, len(rn.Issues)),
 	}
 
-	return result
+	for issue, commits := range rn.Issues {
+		currentIssue := IssueTemplate{
+			ID:      issue.Key,
+			Labels:  issue.Fields.Labels,
+			Summary: issue.Fields.Summary,
+			PRs:     []string{},
+		}
+
+		for _, commit := range commits {
+
+			// get PR number from commit message
+			prNumber := git.ExtractPR(strings.Split(commit.Message, "\n")[0])
+			currentIssue.PRs = append(currentIssue.PRs, prNumber)
+		}
+
+		pr.Issues = append(pr.Issues, currentIssue)
+	}
+
+	// read in the template
+	tmpl, err := template.ParseFiles("./pkg/notes/pr.template")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// execute the struct against the template
+	var tpl bytes.Buffer
+	err = tmpl.Execute(&tpl, pr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return tpl.String()
 }
 
 // takes string-like-this and make it
@@ -48,22 +98,23 @@ func CreateReleaseNotesForRepo(ctx context.Context, logger *zap.Logger, jiraClie
 		log.Fatal(err)
 	}
 
-	foundIssues := make([]*jira.Issue, 0, len(commits))
+	issueCommitMap := make(IssueCommitMap)
 	uniqueIssues := git.CommitsToIssues(commits)
-	for _, issueID := range uniqueIssues {
+	for issueID, commits := range uniqueIssues {
 		fmt.Println("searching for issue ", issueID)
+
 		found, _, err := jiraClient.Issue.Get(ctx, issueID, nil)
 		if err != nil {
 			log.Println("failed to find issue", issueID, err)
 			continue
 		}
 
-		foundIssues = append(foundIssues, found)
+		issueCommitMap[found] = commits
 
 	}
 
 	return ReleaseNote{
 		RepoName: repoName,
-		Issues:   foundIssues,
+		Issues:   issueCommitMap,
 	}
 }
