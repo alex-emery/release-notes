@@ -18,10 +18,7 @@ func createRootCmd() *cobra.Command {
 		Short: "Creates release notes",
 	}
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	_ = godotenv.Load()
 
 	rootCmd.PersistentFlags().StringVar(&privateKey, "private-key", "", "path to the private key for git")
 	if err := rootCmd.MarkPersistentFlagRequired("private-key"); err != nil {

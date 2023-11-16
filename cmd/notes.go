@@ -31,6 +31,9 @@ func createNotesCmd(privatekey *string) *cobra.Command {
 			tag2 := args[2]
 
 			githubToken := os.Getenv("GITHUB_TOKEN")
+			if githubToken == "" {
+				log.Fatal("GITHUB_TOKEN not set")
+			}
 
 			ghClient := github.NewClient(nil).WithAuthToken(githubToken)
 

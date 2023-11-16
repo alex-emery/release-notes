@@ -11,5 +11,8 @@ It does have the prerequisites of `yq` and `gum`
 
 ## Usage
 - copy .env.sample to .env and fill in the email and jira token
+    - another option is to simply export the required env vars
 - `go run main.go pr --private-key=/path/to/ssh/privatekey --path=path/to/k8s-engine --target=yourbranch`
 - hopefully get some release notes in `release-notes.md`
+
+

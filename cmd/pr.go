@@ -39,7 +39,14 @@ func createPrCmd(privatekey *string) *cobra.Command {
 			gitAuth := git.New(*privatekey)
 
 			jiraEmail := os.Getenv("JIRA_EMAIL")
+			if jiraEmail == "" {
+				logger.Fatal("JIRA_EMAIL not set")
+			}
+
 			jiraToken := os.Getenv("JIRA_TOKEN")
+			if jiraToken == "" {
+				logger.Fatal("JIRA_TOKEN not set")
+			}
 
 			tp := jira.BasicAuthTransport{
 				Username: jiraEmail,
