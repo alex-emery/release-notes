@@ -11,10 +11,11 @@ import (
 	"github.com/alex-emery/release-notes/pkg/git"
 	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
-func createNotesCmd(privatekey *string) *cobra.Command {
-
+func createNotesCmd() *cobra.Command {
+	var privatekey = new(string)
 	var jiraHost string
 	var notesCmd = &cobra.Command{
 		Use:   "notes",
@@ -25,7 +26,12 @@ func createNotesCmd(privatekey *string) *cobra.Command {
 				log.Fatal("not enough arguments: expected repo tag1 tag2")
 			}
 
-			gitAuth := git.New(*privatekey)
+			logger, err := zap.NewDevelopment()
+			if err != nil {
+				log.Fatal("failed to create logger", err)
+			}
+
+			gitAuth := git.New(logger, *privatekey)
 			repoName := args[0]
 			tag1 := args[1]
 			tag2 := args[2]
@@ -50,11 +56,11 @@ func createNotesCmd(privatekey *string) *cobra.Command {
 			for _, tag := range tags {
 				fmt.Println(git.GetReleaseForTags(ghClient, repoName, tag))
 			}
-
 		},
 	}
 
 	notesCmd.Flags().StringVar(&jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
+	notesCmd.Flags().StringVar(privatekey, "private-key", "", "the private key to use for github ssh")
 
 	return notesCmd
 }

@@ -4,7 +4,6 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -12,7 +11,6 @@ import (
 )
 
 func createRootCmd() *cobra.Command {
-	var privateKey string
 	var rootCmd = &cobra.Command{
 		Use:   "release-notes",
 		Short: "Creates release notes",
@@ -20,13 +18,9 @@ func createRootCmd() *cobra.Command {
 
 	_ = godotenv.Load()
 
-	rootCmd.PersistentFlags().StringVar(&privateKey, "private-key", "", "path to the private key for git")
-	if err := rootCmd.MarkPersistentFlagRequired("private-key"); err != nil {
-		log.Fatal(err)
-	}
-
-	rootCmd.AddCommand(createPrCmd(&privateKey))
-	rootCmd.AddCommand(createNotesCmd(&privateKey))
+	rootCmd.AddCommand(createPrCmd())
+	rootCmd.AddCommand(createNotesCmd())
+	rootCmd.AddCommand(createUpdateCmd())
 	return rootCmd
 
 }

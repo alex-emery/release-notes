@@ -80,7 +80,6 @@ func DiffKustomizations(original, dest []*types.Kustomization) []ImageDiff {
 }
 
 func ParseYamls(w *git.Worktree, filepath []string) ([]*types.Kustomization, error) {
-	fmt.Println("parsing yaml files")
 	yamlFiles := []*types.Kustomization{}
 	for _, file := range filepath {
 		k, err := ParseYaml(w, file)
@@ -94,7 +93,6 @@ func ParseYamls(w *git.Worktree, filepath []string) ([]*types.Kustomization, err
 }
 
 func ParseYaml(w *git.Worktree, filepath string) (*types.Kustomization, error) {
-	fmt.Println("parsing yaml file: ", filepath)
 	file, err := w.Filesystem.Open(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", filepath, err)
@@ -115,7 +113,6 @@ func ParseYaml(w *git.Worktree, filepath string) (*types.Kustomization, error) {
 }
 
 func GetChangedKustomizations(r *git.Repository, branch string) ([]string, error) {
-	fmt.Println("getting kustomization file changes between")
 	// Get the HEAD reference
 	headRef, err := r.Head()
 	if err != nil {

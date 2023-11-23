@@ -16,11 +16,22 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/go-github/v56/github"
+	"go.uber.org/zap"
 )
 
 type Auth struct {
-	Keys *ssh.PublicKeys
-	Path string
+	Keys   *ssh.PublicKeys
+	Path   string
+	logger *zap.Logger
+}
+
+// GetK8sEngineRepo either clones the repo if the path is empty or opens an existing repo.
+func (g *Auth) GetK8sEngineRepo(path string) (*git.Repository, error) {
+	if path == "" {
+		return g.CloneRepo("k8s-engine")
+	}
+
+	return g.OpenExisting(path)
 }
 
 func (g *Auth) OpenExisting(repo string) (*git.Repository, error) {
@@ -28,7 +39,7 @@ func (g *Auth) OpenExisting(repo string) (*git.Repository, error) {
 }
 
 func (g *Auth) CloneRepo(repo string) (*git.Repository, error) {
-	fmt.Println("Cloning repo: ", g.Path+repo)
+	g.logger.Debug(fmt.Sprintf("Cloning repo: %s%s", g.Path, repo))
 	return git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{
 		Auth: g.Keys,
 		URL:  g.Path + repo,
@@ -44,10 +55,10 @@ func GetTagsBetweenTags(r *git.Repository, tag1, tag2 string) ([]string, error) 
 	versions := []*semver.Version{}
 
 	err = iter.ForEach(func(r *plumbing.Reference) error {
-		name := r.Name().Short()
+		name := strings.TrimPrefix(r.Name().Short(), "v")
 		name = strings.TrimPrefix(name, "v")
 
-		v, err := semver.NewVersion(r.Name().Short())
+		v, err := semver.NewVersion(name)
 		if err != nil {
 			return nil
 		}
@@ -56,6 +67,9 @@ func GetTagsBetweenTags(r *git.Repository, tag1, tag2 string) ([]string, error) 
 
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	tag1 = strings.TrimPrefix(tag1, "v")
 	tag2 = strings.TrimPrefix(tag2, "v")

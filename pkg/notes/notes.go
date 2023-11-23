@@ -3,7 +3,6 @@ package notes
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"html/template"
 	"log"
 	"strings"
@@ -101,11 +100,11 @@ func CreateReleaseNotesForRepo(ctx context.Context, logger *zap.Logger, jiraClie
 	issueCommitMap := make(IssueCommitMap)
 	uniqueIssues := git.CommitsToIssues(commits)
 	for issueID, commits := range uniqueIssues {
-		fmt.Println("searching for issue ", issueID)
+		logger.Debug("searching for issue ", zap.String("issueID", issueID))
 
 		found, _, err := jiraClient.Issue.Get(ctx, issueID, nil)
 		if err != nil {
-			log.Println("failed to find issue", issueID, err)
+			logger.Error("failed to find issue", zap.String("issueID", issueID), zap.Error(err))
 			continue
 		}
 

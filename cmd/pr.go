@@ -5,38 +5,41 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
-	"sync"
 
 	"github.com/alex-emery/release-notes/pkg/git"
+	"github.com/alex-emery/release-notes/pkg/github"
+	"github.com/alex-emery/release-notes/pkg/input"
 	"github.com/alex-emery/release-notes/pkg/notes"
 	jira "github.com/andygrunwald/go-jira/v2/cloud"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
 
-func createPrCmd(privatekey *string) *cobra.Command {
+func createPrCmd() *cobra.Command {
 	var sourceBranch = new(string)
 	var targetBranch = new(string)
-
 	var repoPath = new(string)
-
 	var jiraHost = new(string)
+	var privateKey = new(string)
 
 	var prCmd = &cobra.Command{
 		Use:   "pr",
 		Short: "A brief description of your command",
 
 		Run: func(cmd *cobra.Command, args []string) {
+			if *privateKey == "" && *repoPath == "" {
+				log.Fatal("either --private-key or --path must be set")
+			}
+
 			ctx := context.Background()
 			logger, err := zap.NewDevelopment()
 			if err != nil {
 				log.Fatal("failed to create logger", err)
 			}
 
-			gitAuth := git.New(*privatekey)
+			gitAuth := git.New(logger, *privateKey)
 
 			jiraEmail := os.Getenv("JIRA_EMAIL")
 			if jiraEmail == "" {
@@ -46,6 +49,11 @@ func createPrCmd(privatekey *string) *cobra.Command {
 			jiraToken := os.Getenv("JIRA_TOKEN")
 			if jiraToken == "" {
 				logger.Fatal("JIRA_TOKEN not set")
+			}
+
+			ghToken := os.Getenv("GITHUB_TOKEN")
+			if ghToken == "" {
+				logger.Fatal("GITHUB_TOKEN not set")
 			}
 
 			tp := jira.BasicAuthTransport{
@@ -58,62 +66,17 @@ func createPrCmd(privatekey *string) *cobra.Command {
 				logger.Fatal("failed to create jira client", zap.Error(err))
 			}
 
-			// repo, err := gitAuth.CloneRepo("k8s-engine")
-			repo, err := gitAuth.OpenExisting(*repoPath)
+			notes := notes.CreateReleaseNotes(ctx, logger, gitAuth, jiraClient, *repoPath, *sourceBranch, *targetBranch)
+			ghClient := github.New(logger, ghToken)
+
+			// ask the user to enter a title
+			title, err := input.Ask("Enter a title for the PR: ")
 			if err != nil {
-				logger.Fatal("failed to clone repo", zap.Error(err))
+				logger.Fatal("failed to read title", zap.Error(err))
 			}
 
-			sourceRefs := fmt.Sprintf("refs/heads/%s", *sourceBranch)
-			targetRefs := fmt.Sprintf("refs/heads/%s", *targetBranch)
-
-			diffs, err := git.GetImagesFromK8s(repo, *&sourceRefs, *&targetRefs)
-			if err != nil {
-				logger.Fatal("failed to get images from k8s", zap.Error(err))
-			}
-
-			resultChan := make(chan notes.ReleaseNote, len(diffs))
-
-			wg := sync.WaitGroup{}
-			for _, diff := range diffs {
-				wg.Add(1)
-				go func(diff git.ImageDiff) {
-					defer func() {
-						wg.Done()
-					}()
-
-					logger.Info("diff", zap.String("name", diff.Name), zap.String("tag1", diff.Tag1), zap.String("tag2", diff.Tag2))
-					if repoName := git.ExtractRepo(diff.Name); repoName != "" {
-						resultChan <- notes.CreateReleaseNotesForRepo(ctx, logger, jiraClient, gitAuth, repoName, diff.Tag1, diff.Tag2)
-					} else {
-						resultChan <- notes.ReleaseNote{}
-					}
-				}(diff)
-			}
-
-			wg.Wait()
-			close(resultChan)
-
-			results := []notes.ReleaseNote{}
-			for res := range resultChan {
-				if res.RepoName == "" {
-					continue
-				}
-				results = append(results, res)
-			}
-
-			file, err := os.Create("release-notes.md")
-			if err != nil {
-				logger.Fatal("failed to create file", zap.Error(err))
-			}
-
-			defer file.Close()
-
-			for _, res := range results {
-				_, err := file.WriteString(res.String() + "\n")
-				if err != nil {
-					logger.Fatal("failed to write to file", zap.Error(err))
-				}
+			if err = ghClient.CreatePR(ctx, *targetBranch, *sourceBranch, title, notes); err != nil {
+				logger.Fatal("failed to create PR", zap.Error(err))
 			}
 		},
 	}
@@ -121,7 +84,7 @@ func createPrCmd(privatekey *string) *cobra.Command {
 	prCmd.Flags().StringVarP(sourceBranch, "source", "s", "main", "source branch")
 	prCmd.Flags().StringVarP(targetBranch, "target", "t", "", "target branch")
 	prCmd.Flags().StringVar(repoPath, "path", "", "path to the local k8s-engine repo")
-
+	prCmd.Flags().StringVar(privateKey, "private-key", "", "path to the private key used for github ssh")
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
 
 	if err := prCmd.MarkFlagRequired("target"); err != nil {
