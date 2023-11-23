@@ -12,21 +12,25 @@ import (
 )
 
 func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Auth, jiraClient *jira.Client, repoPath string, sourceBranch, targetBranch string) string {
+	logger.Info("getting k8s-engine repo")
 	repo, err := gitAuth.GetK8sEngineRepo(repoPath)
 	if err != nil {
 		logger.Fatal("failed to clone repo", zap.Error(err))
 	}
+	logger.Info("k8s-engine repo opened")
 
 	sourceRefs := fmt.Sprintf("refs/heads/%s", sourceBranch)
 	targetRefs := fmt.Sprintf("refs/heads/%s", targetBranch)
 
+	logger.Info("fetching image tags from k8s-engine")
 	diffs, err := git.GetImagesFromK8s(repo, sourceRefs, targetRefs)
 	if err != nil {
 		logger.Fatal("failed to get images from k8s", zap.Error(err))
 	}
 
-	resultChan := make(chan ReleaseNote, len(diffs))
+	logger.Info("creating release notes")
 
+	resultChan := make(chan ReleaseNote, len(diffs))
 	wg := sync.WaitGroup{}
 	for _, diff := range diffs {
 		wg.Add(1)
@@ -35,7 +39,7 @@ func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Au
 				wg.Done()
 			}()
 
-			logger.Info("diff", zap.String("name", diff.Name), zap.String("tag1", diff.Tag1), zap.String("tag2", diff.Tag2))
+			logger.Debug("diff", zap.String("name", diff.Name), zap.String("tag1", diff.Tag1), zap.String("tag2", diff.Tag2))
 			if repoName := git.ExtractRepo(diff.Name); repoName != "" {
 				resultChan <- CreateReleaseNotesForRepo(ctx, logger, jiraClient, gitAuth, repoName, diff.Tag1, diff.Tag2)
 			} else {

@@ -29,17 +29,17 @@ func createPrCmd() *cobra.Command {
 		Short: "A brief description of your command",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			if *privateKey == "" && *repoPath == "" {
-				log.Fatal("either --private-key or --path must be set")
-			}
-
 			ctx := context.Background()
-			logger, err := zap.NewDevelopment()
+
+			logger, err := zap.NewProduction()
 			if err != nil {
 				log.Fatal("failed to create logger", err)
 			}
 
-			gitAuth := git.New(logger, *privateKey)
+			gitAuth, err := git.New(logger, *privateKey)
+			if err != nil {
+				logger.Fatal("failed to create git auth", zap.Error(err))
+			}
 
 			jiraEmail := os.Getenv("JIRA_EMAIL")
 			if jiraEmail == "" {
@@ -75,6 +75,10 @@ func createPrCmd() *cobra.Command {
 				logger.Fatal("failed to read title", zap.Error(err))
 			}
 
+			if title == "" {
+				logger.Fatal("title cannot be empty")
+			}
+
 			if err = ghClient.CreatePR(ctx, *targetBranch, *sourceBranch, title, notes); err != nil {
 				logger.Fatal("failed to create PR", zap.Error(err))
 			}
@@ -84,8 +88,9 @@ func createPrCmd() *cobra.Command {
 	prCmd.Flags().StringVarP(sourceBranch, "source", "s", "main", "source branch")
 	prCmd.Flags().StringVarP(targetBranch, "target", "t", "", "target branch")
 	prCmd.Flags().StringVar(repoPath, "path", "", "path to the local k8s-engine repo")
-	prCmd.Flags().StringVar(privateKey, "private-key", "", "path to the private key used for github ssh")
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
+
+	prCmd.Flags().StringVar(privateKey, "private-key", "", "path to the private key")
 
 	if err := prCmd.MarkFlagRequired("target"); err != nil {
 		log.Fatal(err)

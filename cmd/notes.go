@@ -15,8 +15,8 @@ import (
 )
 
 func createNotesCmd() *cobra.Command {
-	var privatekey = new(string)
-	var jiraHost string
+	var jiraHost = new(string)
+	var privateKey = new(string)
 	var notesCmd = &cobra.Command{
 		Use:   "notes",
 		Short: "creates release notes for a repo",
@@ -31,7 +31,11 @@ func createNotesCmd() *cobra.Command {
 				log.Fatal("failed to create logger", err)
 			}
 
-			gitAuth := git.New(logger, *privatekey)
+			gitAuth, err := git.New(logger, *privateKey)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			repoName := args[0]
 			tag1 := args[1]
 			tag2 := args[2]
@@ -59,8 +63,8 @@ func createNotesCmd() *cobra.Command {
 		},
 	}
 
-	notesCmd.Flags().StringVar(&jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
-	notesCmd.Flags().StringVar(privatekey, "private-key", "", "the private key to use for github ssh")
+	notesCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
+	notesCmd.Flags().StringVar(privateKey, "private-key", "", "the path to the private key to use for git authentication")
 
 	return notesCmd
 }
