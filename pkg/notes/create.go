@@ -62,7 +62,12 @@ func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Au
 	body := strings.Builder{}
 	body.Write([]byte("## Release Notes\n\n"))
 	for _, res := range results {
-		body.WriteString(res.String() + "\n")
+		resString, err := res.String()
+		if err != nil {
+			logger.Error("failed to get release note for repo", zap.String("repo name", res.RepoName), zap.Error(err))
+			continue
+		}
+		body.WriteString(resString + "\n")
 	}
 
 	return body.String()

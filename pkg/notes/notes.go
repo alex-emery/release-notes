@@ -3,6 +3,7 @@ package notes
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"html/template"
 	"log"
 	"strings"
@@ -34,7 +35,7 @@ type IssueTemplate struct {
 }
 
 // Print issue.
-func (rn ReleaseNote) String() string {
+func (rn ReleaseNote) String() (string, error) {
 	pr := PRTemplate{
 		RepoURL:  "https://github.com/Adarga-Ltd/" + rn.RepoName,
 		RepoName: formatRepoName(rn.RepoName),
@@ -60,19 +61,17 @@ func (rn ReleaseNote) String() string {
 	}
 
 	// read in the template
-	tmpl, err := template.ParseFiles("./pkg/notes/pr.template")
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	tmpl := template.New(prTemplate)
 
 	// execute the struct against the template
 	var tpl bytes.Buffer
-	err = tmpl.Execute(&tpl, pr)
+	err := tmpl.Execute(&tpl, pr)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to execute template : %v", err)
 	}
 
-	return tpl.String()
+	return tpl.String(), nil
 }
 
 // takes string-like-this and make it
