@@ -62,11 +62,14 @@ func (rn ReleaseNote) String() (string, error) {
 
 	// read in the template
 
-	tmpl := template.New(prTemplate)
+	tmpl, err := template.ParseFS(templateFS, "pr.template")
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template : %v", err)
+	}
 
 	// execute the struct against the template
 	var tpl bytes.Buffer
-	err := tmpl.Execute(&tpl, pr)
+	err = tmpl.Execute(&tpl, pr)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute template : %v", err)
 	}

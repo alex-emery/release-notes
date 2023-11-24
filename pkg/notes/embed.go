@@ -1,8 +1,8 @@
 package notes
 
 import (
-	_ "embed"
+	"embed"
 )
 
 //go:embed pr.template
-var prTemplate string
+var templateFS embed.FS
