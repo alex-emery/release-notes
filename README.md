@@ -9,10 +9,23 @@ then run `k8s-update` in the k8s-engine repo.
 It does have the prerequisites of `yq` and `gum`
 - `brew install gum yq`
 
+## Prerequisites
+Generate Github token
+- https://github.com/settings/tokens
+    - create a classic token
+    - select full repo access
+    - create token
+    - authenticate org via SSO
+
+Generate Jira Tokens 
+- https://id.atlassian.com/manage-profile/security/api-tokens
+
 ## Usage
-- copy .env.sample to .env and fill in the email and jira token
-    - another option is to simply export the required env vars
-- `go run main.go pr --private-key=/path/to/ssh/privatekey --path=path/to/k8s-engine --target=yourbranch`
-- hopefully get some release notes in `release-notes.md`
+- `go install github.com/alex-emery/release-notes@v0.0.6`
+- `export JIRA_TOKEN=<jira token>`
+- `export JIRA_EMAIL=<jira email>`
+- `export GITHUB_TOKEN=<GITHUB_TOKEN># used to create the PR`
+- `release-notes pr --path=path/to/k8s-engine --target=yourbranch`
+- A PR will automatically be created in `k8s-engine`
 
 
