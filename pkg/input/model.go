@@ -26,8 +26,7 @@ func Ask(title string) (string, error) {
 func New(title string, body *string) Model {
 	ti := textinput.New()
 	ti.Focus()
-	ti.CharLimit = 156
-	ti.Width = 20
+	ti.Width = 200
 
 	return Model{
 		title:     title,

@@ -133,20 +133,20 @@ func GetCommitsBetweenTags(r *git.Repository, tag1, tag2 string) ([]object.Commi
 		return nil, fmt.Errorf("tag1: %s must be less than tag2: %s", tag1, tag2)
 	}
 
-	if !strings.HasPrefix(tag1, "v") {
-		tag1 = "v" + tag1
-	}
-	if !strings.HasPrefix(tag2, "v") {
-		tag2 = "v" + tag2
-	}
+	tag1 = strings.TrimLeft(tag1, "v")
+	tag2 = strings.TrimLeft(tag2, "v")
 
 	// check if the tag is missing a v prefix
 	err = tagIter.ForEach(func(r *plumbing.Reference) error {
-		if r.Name().Short() == tag1 {
+		name := r.Name().Short()
+		name = strings.TrimPrefix(name, "v")
+		name = strings.TrimPrefix(name, "deploy-")
+		if name == tag1 {
 			startSHA = r.Hash()
-		} else if r.Name().Short() == tag2 {
+		} else if name == tag2 {
 			endSHA = r.Hash()
 		}
+
 		return nil
 	})
 
