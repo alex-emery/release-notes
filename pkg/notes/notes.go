@@ -12,6 +12,8 @@ import (
 	jira "github.com/andygrunwald/go-jira/v2/cloud"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type IssueCommitMap map[*jira.Issue][]object.Commit
@@ -63,7 +65,6 @@ func (rn ReleaseNote) String() (string, error) {
 	}
 
 	// read in the template
-
 	tmpl, err := template.ParseFS(templateFS, "pr.template")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template : %v", err)
@@ -82,10 +83,13 @@ func (rn ReleaseNote) String() (string, error) {
 // takes string-like-this and make it
 // String Like This
 func formatRepoName(s string) string {
+	caser := cases.Title(language.English)
+
 	words := strings.Split(s, "-")
 	for i, word := range words {
-		words[i] = strings.Title(word)
+		words[i] = caser.String(word)
 	}
+
 	return strings.Join(words, " ")
 }
 

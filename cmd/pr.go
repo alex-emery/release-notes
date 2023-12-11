@@ -93,7 +93,7 @@ func createPrCmd() *cobra.Command {
 
 	prCmd.Flags().StringVarP(sourceBranch, "source", "s", "main", "source branch")
 	prCmd.Flags().StringVarP(targetBranch, "target", "t", "", "target branch")
-	prCmd.Flags().StringVar(repoPath, "path", "", "path to the local k8s-engine repo")
+	prCmd.Flags().StringVar(repoPath, "path", ".", "path to the local k8s-engine repo")
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
 	prCmd.Flags().BoolVar(dryRun, "dry-run", false, "enable to not create the PR")
 
