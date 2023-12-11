@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -23,6 +24,7 @@ func createPrCmd() *cobra.Command {
 	var repoPath = new(string)
 	var jiraHost = new(string)
 	var privateKey = new(string)
+	var dryRun = new(bool)
 
 	var prCmd = &cobra.Command{
 		Use:   "pr",
@@ -70,13 +72,17 @@ func createPrCmd() *cobra.Command {
 			ghClient := github.New(logger, ghToken)
 
 			// ask the user to enter a title
-			title, err := input.Ask("Enter a title for the PR: ")
+			title, err := input.Run("Enter a title for the PR: ")
 			if err != nil {
 				logger.Fatal("failed to read title", zap.Error(err))
 			}
 
 			if title == "" {
 				logger.Fatal("title cannot be empty")
+			}
+			if *dryRun {
+				fmt.Println(notes)
+				return
 			}
 
 			if err = ghClient.CreatePR(ctx, *targetBranch, *sourceBranch, title, notes); err != nil {
@@ -89,6 +95,7 @@ func createPrCmd() *cobra.Command {
 	prCmd.Flags().StringVarP(targetBranch, "target", "t", "", "target branch")
 	prCmd.Flags().StringVar(repoPath, "path", "", "path to the local k8s-engine repo")
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
+	prCmd.Flags().BoolVar(dryRun, "dry-run", false, "enable to not create the PR")
 
 	prCmd.Flags().StringVar(privateKey, "private-key", "", "path to the private key")
 

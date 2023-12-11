@@ -30,6 +30,7 @@ type PRTemplate struct {
 type IssueTemplate struct {
 	ID      string
 	Summary string
+	Status  string
 	Labels  []string
 	PRs     []string
 }
@@ -47,6 +48,7 @@ func (rn ReleaseNote) String() (string, error) {
 			ID:      issue.Key,
 			Labels:  issue.Fields.Labels,
 			Summary: issue.Fields.Summary,
+			Status:  issue.Fields.Status.Name,
 			PRs:     []string{},
 		}
 

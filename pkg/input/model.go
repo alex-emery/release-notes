@@ -13,7 +13,7 @@ type Model struct {
 	body      *string
 }
 
-func Ask(title string) (string, error) {
+func Run(title string) (string, error) {
 	body := new(string)
 	p := tea.NewProgram(New(title, body))
 	if _, err := p.Run(); err != nil {

@@ -1,6 +1,7 @@
 ### {{.RepoName}}
 {{range .Issues}}
 - [{{.ID}}](https://adarga.atlassian.net/browse/{{.ID}}) - {{.Summary}}
-    - Labels: {{range .Labels}}{{.}}{{end}}
+    - :rocket: {{.Status}}
+    - :️label: {{range .Labels}}{{.}}{{end}}
     - PRs: {{range .PRs}}[(#{{.}})]({{$.RepoURL}}/pull/{{.}}){{end}}
 {{end}}

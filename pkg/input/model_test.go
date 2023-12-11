@@ -8,6 +8,6 @@ import (
 )
 
 func TestInput(t *testing.T) {
-	answer, _ := input.Ask("test")
+	answer, _ := input.Run("test")
 	fmt.Println(answer)
 }
