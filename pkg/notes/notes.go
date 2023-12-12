@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"log"
 	"strings"
 
 	"github.com/alex-emery/release-notes/pkg/git"
@@ -94,16 +93,18 @@ func formatRepoName(s string) string {
 }
 
 func CreateReleaseNotesForRepo(ctx context.Context, logger *zap.Logger, jiraClient *jira.Client, gitAuth *git.Auth, repoName string, tag1 string, tag2 string) ReleaseNote {
+	logger = logger.With(zap.String("repo", repoName))
 	repo, err := gitAuth.CloneRepo(repoName)
 	if err != nil {
-		logger.Error("failed to clone: skipping", zap.String("repo", repoName), zap.Error(err))
+		logger.Error("failed to clone: skipping", zap.Error(err))
 		return ReleaseNote{}
 	}
 
 	logger.Debug("getting commits between tags", zap.String("tag1", tag1), zap.String("tag2", tag2))
 	commits, err := git.GetCommitsBetweenTags(repo, tag1, tag2)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("failed to get commits between tags", zap.String("tag1", tag1), zap.String("tag2", tag2), zap.Error(err))
+		return ReleaseNote{}
 	}
 
 	issueCommitMap := make(IssueCommitMap)

@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Auth, jiraClient *jira.Client, repoPath string, sourceBranch string, targetBranch *string) (string, error) {
+func CreateReleaseNotesFromK8sEngine(ctx context.Context, logger *zap.Logger, gitAuth *git.Auth, jiraClient *jira.Client, repoPath string, sourceBranch string, targetBranch *string) (string, error) {
 	logger.Info("getting k8s-engine repo")
 	repo, err := gitAuth.GetK8sEngineRepo(repoPath)
 	if err != nil {
@@ -52,7 +52,7 @@ func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Au
 			}()
 
 			logger.Debug("diff", zap.String("name", diff.Name), zap.String("tag1", diff.Tag1), zap.String("tag2", diff.Tag2))
-			if repoName := git.ExtractRepo(diff.Name); repoName != "" {
+			if repoName := git.ExtractRepoName(diff.Name); repoName != "" {
 				resultChan <- CreateReleaseNotesForRepo(ctx, logger, jiraClient, gitAuth, repoName, diff.Tag1, diff.Tag2)
 			} else {
 				resultChan <- ReleaseNote{}
@@ -71,16 +71,20 @@ func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Au
 		results = append(results, res)
 	}
 
+	return ReleaseNoteToString(logger, results...), nil
+}
+
+func ReleaseNoteToString(logger *zap.Logger, notes ...ReleaseNote) string {
 	body := strings.Builder{}
 	body.Write([]byte("## Release Notes\n\n"))
-	for _, res := range results {
-		resString, err := res.String()
+	for _, note := range notes {
+		resString, err := note.String()
 		if err != nil {
-			logger.Error("failed to get release note for repo", zap.String("repo name", res.RepoName), zap.Error(err))
+			logger.Error("failed to get release note for repo", zap.String("repo name", note.RepoName), zap.Error(err))
 			continue
 		}
 		body.WriteString(resString + "\n")
 	}
 
-	return body.String(), nil
+	return body.String()
 }

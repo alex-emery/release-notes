@@ -4,7 +4,6 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -18,22 +17,21 @@ import (
 	"go.uber.org/zap"
 )
 
-func createPrCmd() *cobra.Command {
+func createPrCmd(verbose *bool) *cobra.Command {
 	var sourceBranch = new(string)
 	var targetBranch = new(string)
 	var repoPath = new(string)
 	var jiraHost = new(string)
 	var privateKey = new(string)
 	var dryRun = new(bool)
-	var verbose = new(bool)
 
 	var prCmd = &cobra.Command{
 		Use:   "pr",
 		Short: "A brief description of your command",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background()
 
+			ctx := cmd.Context()
 			var logger *zap.Logger
 			var err error
 			if *verbose {
@@ -41,10 +39,10 @@ func createPrCmd() *cobra.Command {
 			} else {
 				logger, err = zap.NewProduction()
 			}
+
 			if err != nil {
 				log.Fatal("failed to create logger", err)
 			}
-
 			gitAuth, err := git.New(logger, *privateKey)
 			if err != nil {
 				logger.Fatal("failed to create git auth", zap.Error(err))
@@ -76,7 +74,7 @@ func createPrCmd() *cobra.Command {
 			}
 
 			// pass pointers to the branch because set it to the head ref if it's empty
-			notes, err := notes.CreateReleaseNotes(ctx, logger, gitAuth, jiraClient, *repoPath, *sourceBranch, targetBranch)
+			notes, err := notes.CreateReleaseNotesFromK8sEngine(ctx, logger, gitAuth, jiraClient, *repoPath, *sourceBranch, targetBranch)
 			if err != nil {
 				logger.Fatal("failed to create release notes", zap.Error(err))
 			}
@@ -109,7 +107,6 @@ func createPrCmd() *cobra.Command {
 	prCmd.Flags().StringVar(repoPath, "path", ".", "path to the local k8s-engine repo")
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
 	prCmd.Flags().BoolVar(dryRun, "dry-run", false, "enable to not create the PR")
-	prCmd.Flags().BoolVar(verbose, "verbose", false, "enable verbose logging")
 
 	prCmd.Flags().StringVar(privateKey, "private-key", "", "path to the private key")
 

@@ -56,7 +56,7 @@ func TestExtractRepo(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actual := git.ExtractRepo(tc.repo)
+		actual := git.ExtractRepoName(tc.repo)
 		assert.Equal(t, tc.expected, actual)
 	}
 

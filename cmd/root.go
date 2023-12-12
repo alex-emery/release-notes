@@ -11,15 +11,19 @@ import (
 )
 
 func createRootCmd() *cobra.Command {
+	var verbose = new(bool)
+
 	var rootCmd = &cobra.Command{
 		Use:   "release-notes",
 		Short: "Creates release notes",
 	}
 
+	rootCmd.PersistentFlags().BoolVar(verbose, "verbose", false, "enable verbose logging")
+
 	_ = godotenv.Load()
 
-	rootCmd.AddCommand(createPrCmd())
-	rootCmd.AddCommand(createNotesCmd())
+	rootCmd.AddCommand(createPrCmd(verbose))
+	rootCmd.AddCommand(createNotesCmd(verbose))
 	rootCmd.AddCommand(createUpdateCmd())
 	return rootCmd
 

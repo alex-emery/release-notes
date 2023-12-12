@@ -9,12 +9,13 @@ import (
 	"os"
 
 	"github.com/alex-emery/release-notes/pkg/git"
-	"github.com/google/go-github/v56/github"
+	"github.com/alex-emery/release-notes/pkg/notes"
+	jira "github.com/andygrunwald/go-jira/v2/cloud"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
 
-func createNotesCmd() *cobra.Command {
+func createNotesCmd(verbose *bool) *cobra.Command {
 	var jiraHost = new(string)
 	var privateKey = new(string)
 	var notesCmd = &cobra.Command{
@@ -26,14 +27,32 @@ func createNotesCmd() *cobra.Command {
 				log.Fatal("not enough arguments: expected repo tag1 tag2")
 			}
 
-			logger, err := zap.NewDevelopment()
+			ctx := cmd.Context()
+			var logger *zap.Logger
+			var err error
+			if *verbose {
+				logger, err = zap.NewDevelopment()
+			} else {
+				logger, err = zap.NewProduction()
+			}
+
 			if err != nil {
 				log.Fatal("failed to create logger", err)
 			}
 
+			jiraEmail := os.Getenv("JIRA_EMAIL")
+			if jiraEmail == "" {
+				logger.Fatal("JIRA_EMAIL not set")
+			}
+
+			jiraToken := os.Getenv("JIRA_TOKEN")
+			if jiraToken == "" {
+				logger.Fatal("JIRA_TOKEN not set")
+			}
+
 			gitAuth, err := git.New(logger, *privateKey)
 			if err != nil {
-				log.Fatal(err)
+				logger.Fatal("failed to create git auth", zap.Error(err))
 			}
 
 			repoName := args[0]
@@ -45,21 +64,28 @@ func createNotesCmd() *cobra.Command {
 				log.Fatal("GITHUB_TOKEN not set")
 			}
 
-			ghClient := github.NewClient(nil).WithAuthToken(githubToken)
+			tp := jira.BasicAuthTransport{
+				Username: jiraEmail,
+				APIToken: jiraToken,
+			}
 
-			repo, err := gitAuth.CloneRepo(repoName)
+			jiraClient, err := jira.NewClient(*jiraHost, tp.Client())
 			if err != nil {
-				log.Fatal(err)
+				logger.Fatal("failed to create jira client", zap.Error(err))
 			}
 
-			tags, err := git.GetTagsBetweenTags(repo, tag1, tag2)
+			releaseNote := notes.CreateReleaseNotesForRepo(ctx, logger, jiraClient, gitAuth, repoName, tag1, tag2)
 			if err != nil {
-				log.Fatal(err)
+				logger.Fatal("failed to create release notes", zap.Error(err))
 			}
 
-			for _, tag := range tags {
-				fmt.Println(git.GetReleaseForTags(ghClient, repoName, tag))
+			if releaseNote.Issues == nil {
+				logger.Fatal("no issues found")
 			}
+
+			releaseNoteString := notes.ReleaseNoteToString(logger, releaseNote)
+
+			fmt.Println(releaseNoteString)
 		},
 	}
 

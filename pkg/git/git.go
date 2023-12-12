@@ -216,7 +216,7 @@ func CommitsToIssues(commits []object.Commit) IssueCommitMap {
 	return commitMap
 }
 
-func ExtractRepo(line string) string {
+func ExtractRepoName(line string) string {
 	var re = regexp.MustCompile(`(?m)adarga/(?P<repo>.+)`)
 
 	match := re.FindStringSubmatch(line)
