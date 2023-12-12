@@ -60,6 +60,7 @@ func New(basepath string) *tview.Application {
 			return
 		}
 
+		nsPage.Clear()
 		for _, ns := range namespaces {
 			nsPage.AddItem(ns, "", 0, nil)
 		}
@@ -80,6 +81,7 @@ func New(basepath string) *tview.Application {
 			return
 		}
 
+		imagePage.Clear()
 		selectedKustFile = kustFile
 		for _, image := range kustFile.Images {
 			imagePage.AddItem(image.Name, "", 0, nil)
