@@ -1,7 +1,41 @@
 ### {{.RepoName}}
 {{range .Issues}}
 - [{{.ID}}](https://adarga.atlassian.net/browse/{{.ID}}) - {{.Summary}}
-    - :rocket: {{.Status}}
-    - :️label: {{range .Labels}}{{.}} {{end}}
-    - PRs: {{range .PRs}}[(#{{.}})]({{$.RepoURL}}/pull/{{.}}){{end}}
+    🚀 {{.Status}}
+    🏷️ {{range .Labels}}{{.}} {{end}}
+    {{range .PRs}}- {{$.RepoURL}}/pull/{{.}}
+    {{end}}
 {{end}}
+
+### Environment
+
+Please specify the environment into which the changes are being deployed.
+
+- [ ] Staging
+- [ ] Production
+
+### Checklist
+
+The following checks need to be completed before your PR can be merged: 
+
+#### Staging
+
+- [ ] Your PR has passed the StackHawk security scan in the development environment with no high risk issues.
+- [ ] Your PR has been approved by the Quality team.
+- [ ] If your PR is updating a micro-ui then your PR contains any necessary updates to `@adarga/bench-shell-ui`.
+
+#### Production
+
+- [ ] You updated the template for new production environments (if applicable). 
+- [ ] Your PR has passed the QA regression tests in staging.
+- [ ] Your PR has passed the StackHawk security scan in the staging environment with no high risk issues.
+- [ ] You have added a label to this PR specifying the release category: `minor`/`major`/`security`.
+- [ ] You have added labels to this PR specifying the year and month. For example `2022` and `October`.
+- [ ] Your PR has been approved by the Platform or Office of Engineering teams.
+- [ ] If your PR is for a `security` or `major` release your PR has been approved by the CISO @steve-adarga.
+- [ ] If your PR is updating a micro-ui then your PR contains any necessary updates to `@adarga/bench-shell-ui`.
+
+### Further Info
+Development Process - https://adarga-manual.pages.adarga.dev/ways-of-working/product-teams/development-process/
+
+Using Stackhawk - https://adarga.atlassian.net/wiki/spaces/PLAT/pages/3192946704/Using+Stackhawk 

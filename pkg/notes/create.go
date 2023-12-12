@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Auth, jiraClient *jira.Client, repoPath string, sourceBranch, targetBranch string) (string, error) {
+func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Auth, jiraClient *jira.Client, repoPath string, sourceBranch string, targetBranch *string) (string, error) {
 	logger.Info("getting k8s-engine repo")
 	repo, err := gitAuth.GetK8sEngineRepo(repoPath)
 	if err != nil {
@@ -20,19 +20,19 @@ func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Au
 
 	logger.Info("k8s-engine repo opened")
 
-	if targetBranch == "" {
+	if *targetBranch == "" {
 		logger.Debug("target branch not set, getting head ref")
 		headRef, err := repo.Head()
 		if err != nil {
 			return "", fmt.Errorf("failed to get head ref: %w", err)
 		}
 
-		targetBranch = headRef.Name().Short()
-		logger.Info("defaulting target branch", zap.String("target branch", targetBranch))
+		*targetBranch = headRef.Name().Short()
+		logger.Info("defaulting target branch", zap.String("target branch", *targetBranch))
 	}
 
 	sourceRefs := fmt.Sprintf("refs/heads/%s", sourceBranch)
-	targetRefs := fmt.Sprintf("refs/heads/%s", targetBranch)
+	targetRefs := fmt.Sprintf("refs/heads/%s", *targetBranch)
 
 	logger.Info("fetching image tags from k8s-engine")
 	diffs, err := git.GetImagesFromK8s(repo, sourceRefs, targetRefs)

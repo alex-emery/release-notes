@@ -100,6 +100,7 @@ func CreateReleaseNotesForRepo(ctx context.Context, logger *zap.Logger, jiraClie
 		return ReleaseNote{}
 	}
 
+	logger.Debug("getting commits between tags", zap.String("tag1", tag1), zap.String("tag2", tag2))
 	commits, err := git.GetCommitsBetweenTags(repo, tag1, tag2)
 	if err != nil {
 		log.Fatal(err)
@@ -107,6 +108,9 @@ func CreateReleaseNotesForRepo(ctx context.Context, logger *zap.Logger, jiraClie
 
 	issueCommitMap := make(IssueCommitMap)
 	uniqueIssues := git.CommitsToIssues(commits)
+
+	logger.Debug("unique issues", zap.Int("count", len(uniqueIssues)))
+
 	for issueID, commits := range uniqueIssues {
 		logger.Debug("searching for issue ", zap.String("issueID", issueID))
 

@@ -75,9 +75,15 @@ func createPrCmd() *cobra.Command {
 				logger.Fatal("failed to create jira client", zap.Error(err))
 			}
 
-			notes, err := notes.CreateReleaseNotes(ctx, logger, gitAuth, jiraClient, *repoPath, *sourceBranch, *targetBranch)
+			// pass pointers to the branch because set it to the head ref if it's empty
+			notes, err := notes.CreateReleaseNotes(ctx, logger, gitAuth, jiraClient, *repoPath, *sourceBranch, targetBranch)
 			if err != nil {
 				logger.Fatal("failed to create release notes", zap.Error(err))
+			}
+
+			if *dryRun {
+				fmt.Println(notes)
+				return
 			}
 
 			ghClient := github.New(logger, ghToken)
@@ -90,10 +96,6 @@ func createPrCmd() *cobra.Command {
 
 			if title == "" {
 				logger.Fatal("title cannot be empty")
-			}
-			if *dryRun {
-				fmt.Println(notes)
-				return
 			}
 
 			if err = ghClient.CreatePR(ctx, *targetBranch, *sourceBranch, title, notes); err != nil {
