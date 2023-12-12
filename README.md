@@ -24,7 +24,7 @@ Generate Jira Tokens
 - https://id.atlassian.com/manage-profile/security/api-tokens
 
 ## Usage
-- `go install github.com/alex-emery/release-notes@v0.0.9`
+- `go install github.com/alex-emery/release-notes@v0.0.10`
 - `export JIRA_TOKEN=<jira token>`
 - `export JIRA_EMAIL=<jira email>`
 - `export GITHUB_TOKEN=<GITHUB_TOKEN># used to create the PR`
