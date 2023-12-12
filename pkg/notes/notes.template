@@ -1,0 +1,5 @@
+### {{.RepoName}}{{range .Issues}}
+- [{{.ID}}](https://adarga.atlassian.net/browse/{{.ID}}) - {{.Summary}}
+    🚀 {{.Status}}
+    🏷️ {{range .Labels}}{{.}} {{end}}
+    {{range .PRs}}- {{$.RepoURL}}/pull/{{.}}{{end}}{{end}}

@@ -36,6 +36,23 @@ type IssueTemplate struct {
 	PRs     []string
 }
 
+// Just wraps the relase with the env template.
+func WrapReleaseWithEnvTemplate(content string) (string, error) {
+	tmpl, err := template.ParseFS(templateFS, "env.template")
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template : %v", err)
+	}
+
+	// execute the struct against the template
+	var tpl bytes.Buffer
+	err = tmpl.Execute(&tpl, content)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute template : %v", err)
+	}
+
+	return tpl.String(), nil
+}
+
 // Print issue.
 func (rn ReleaseNote) String() (string, error) {
 	pr := PRTemplate{
@@ -64,7 +81,7 @@ func (rn ReleaseNote) String() (string, error) {
 	}
 
 	// read in the template
-	tmpl, err := template.ParseFS(templateFS, "pr.template")
+	tmpl, err := template.ParseFS(templateFS, "notes.template")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template : %v", err)
 	}

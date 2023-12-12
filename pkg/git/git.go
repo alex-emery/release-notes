@@ -96,6 +96,21 @@ func GetReleaseForTags(client *github.Client, repo, tag string) string {
 	return tagResp.GetBody()
 }
 
+func Checkout(r *git.Repository, branch *plumbing.Reference) error {
+	w, err := r.Worktree()
+	if err != nil {
+		return err
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{
+		Branch: branch.Name(),
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to checkout branch %s: %w", branch.Name(), err)
+	}
+	return nil
+}
 func CompareTags(tag1, tag2 string) (int, error) {
 	// strip off any v prefix
 	tag1 = strings.TrimPrefix(tag1, "v")

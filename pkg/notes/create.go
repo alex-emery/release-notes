@@ -20,14 +20,21 @@ func CreateReleaseNotesFromK8sEngine(ctx context.Context, logger *zap.Logger, gi
 
 	logger.Info("k8s-engine repo opened")
 
+	originalBranch, err := repo.Head()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current branch: %w", err)
+	}
+
+	defer func() {
+		if err = git.Checkout(repo, originalBranch); err != nil {
+			logger.Error("failed to restore to original branch", zap.Error(err))
+		}
+	}()
+
 	if *targetBranch == "" {
 		logger.Debug("target branch not set, getting head ref")
-		headRef, err := repo.Head()
-		if err != nil {
-			return "", fmt.Errorf("failed to get head ref: %w", err)
-		}
 
-		*targetBranch = headRef.Name().Short()
+		*targetBranch = originalBranch.Name().Short()
 		logger.Info("defaulting target branch", zap.String("target branch", *targetBranch))
 	}
 
@@ -71,7 +78,7 @@ func CreateReleaseNotesFromK8sEngine(ctx context.Context, logger *zap.Logger, gi
 		results = append(results, res)
 	}
 
-	return ReleaseNoteToString(logger, results...), nil
+	return WrapReleaseWithEnvTemplate(ReleaseNoteToString(logger, results...))
 }
 
 func ReleaseNoteToString(logger *zap.Logger, notes ...ReleaseNote) string {
