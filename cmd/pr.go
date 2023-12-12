@@ -27,8 +27,10 @@ func createPrCmd(verbose *bool) *cobra.Command {
 
 	var prCmd = &cobra.Command{
 		Use:   "pr",
-		Short: "A brief description of your command",
-
+		Short: "Creates a PR in k8s-engine based off the image diff between a branch and main.",
+		Long: `Creates a PR in the k8s-engine repo based on the diff between a branch and main.
+Images found in the diff are cloned into memory and fetched from GitHub.
+If a repo is found further information is gathered based off the commits between the tags, fetching tickets from Jira when possible.`,
 		Run: func(cmd *cobra.Command, args []string) {
 
 			ctx := cmd.Context()
@@ -103,10 +105,10 @@ func createPrCmd(verbose *bool) *cobra.Command {
 	}
 
 	prCmd.Flags().StringVarP(sourceBranch, "source", "s", "main", "source branch")
-	prCmd.Flags().StringVarP(targetBranch, "target", "t", "", "target branch")
+	prCmd.Flags().StringVarP(targetBranch, "target", "t", "", "target branch, defaults to current branch if not specified")
 	prCmd.Flags().StringVar(repoPath, "path", ".", "path to the local k8s-engine repo")
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
-	prCmd.Flags().BoolVar(dryRun, "dry-run", false, "enable to not create the PR")
+	prCmd.Flags().BoolVar(dryRun, "dry-run", false, "disables PR creation in GitHub")
 
 	prCmd.Flags().StringVar(privateKey, "private-key", "", "path to the private key")
 

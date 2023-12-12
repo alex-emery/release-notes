@@ -20,8 +20,10 @@ func createNotesCmd(verbose *bool) *cobra.Command {
 	var privateKey = new(string)
 	var notesCmd = &cobra.Command{
 		Use:   "notes",
-		Short: "creates release notes for a repo",
-		Long:  "creates release notes for a repo, fetching additional fields from Jira.",
+		Short: "Creates release notes for a repo",
+		Long: `Creates release notes for a repo, by fetching all commits between the two given tags.
+Jira tickets are extracted from the commit messages.
+These Jira tickets are then used to provide additional information in the generated notes..`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 3 {
 				log.Fatal("not enough arguments: expected repo tag1 tag2")
