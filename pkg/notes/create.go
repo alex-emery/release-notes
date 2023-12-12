@@ -11,13 +11,25 @@ import (
 	"go.uber.org/zap"
 )
 
-func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Auth, jiraClient *jira.Client, repoPath string, sourceBranch, targetBranch string) string {
+func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Auth, jiraClient *jira.Client, repoPath string, sourceBranch, targetBranch string) (string, error) {
 	logger.Info("getting k8s-engine repo")
 	repo, err := gitAuth.GetK8sEngineRepo(repoPath)
 	if err != nil {
-		logger.Fatal("failed to clone repo", zap.Error(err))
+		return "", fmt.Errorf("failed to get k8s-engine repo: %w", err)
 	}
+
 	logger.Info("k8s-engine repo opened")
+
+	if targetBranch == "" {
+		logger.Debug("target branch not set, getting head ref")
+		headRef, err := repo.Head()
+		if err != nil {
+			return "", fmt.Errorf("failed to get head ref: %w", err)
+		}
+
+		targetBranch = headRef.Name().Short()
+		logger.Info("defaulting target branch", zap.String("target branch", targetBranch))
+	}
 
 	sourceRefs := fmt.Sprintf("refs/heads/%s", sourceBranch)
 	targetRefs := fmt.Sprintf("refs/heads/%s", targetBranch)
@@ -25,7 +37,7 @@ func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Au
 	logger.Info("fetching image tags from k8s-engine")
 	diffs, err := git.GetImagesFromK8s(repo, sourceRefs, targetRefs)
 	if err != nil {
-		logger.Fatal("failed to get images from k8s", zap.Error(err))
+		return "", fmt.Errorf("failed to get images from k8s: %w", err)
 	}
 
 	logger.Info("creating release notes")
@@ -70,5 +82,5 @@ func CreateReleaseNotes(ctx context.Context, logger *zap.Logger, gitAuth *git.Au
 		body.WriteString(resString + "\n")
 	}
 
-	return body.String()
+	return body.String(), nil
 }

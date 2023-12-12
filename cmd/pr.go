@@ -25,6 +25,7 @@ func createPrCmd() *cobra.Command {
 	var jiraHost = new(string)
 	var privateKey = new(string)
 	var dryRun = new(bool)
+	var verbose = new(bool)
 
 	var prCmd = &cobra.Command{
 		Use:   "pr",
@@ -33,7 +34,13 @@ func createPrCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
 
-			logger, err := zap.NewProduction()
+			var logger *zap.Logger
+			var err error
+			if *verbose {
+				logger, err = zap.NewDevelopment()
+			} else {
+				logger, err = zap.NewProduction()
+			}
 			if err != nil {
 				log.Fatal("failed to create logger", err)
 			}
@@ -68,7 +75,11 @@ func createPrCmd() *cobra.Command {
 				logger.Fatal("failed to create jira client", zap.Error(err))
 			}
 
-			notes := notes.CreateReleaseNotes(ctx, logger, gitAuth, jiraClient, *repoPath, *sourceBranch, *targetBranch)
+			notes, err := notes.CreateReleaseNotes(ctx, logger, gitAuth, jiraClient, *repoPath, *sourceBranch, *targetBranch)
+			if err != nil {
+				logger.Fatal("failed to create release notes", zap.Error(err))
+			}
+
 			ghClient := github.New(logger, ghToken)
 
 			// ask the user to enter a title
@@ -96,12 +107,9 @@ func createPrCmd() *cobra.Command {
 	prCmd.Flags().StringVar(repoPath, "path", ".", "path to the local k8s-engine repo")
 	prCmd.Flags().StringVar(jiraHost, "jira-host", "https://adarga.atlassian.net", "the host of the jira instance")
 	prCmd.Flags().BoolVar(dryRun, "dry-run", false, "enable to not create the PR")
+	prCmd.Flags().BoolVar(verbose, "verbose", false, "enable verbose logging")
 
 	prCmd.Flags().StringVar(privateKey, "private-key", "", "path to the private key")
-
-	if err := prCmd.MarkFlagRequired("target"); err != nil {
-		log.Fatal(err)
-	}
 
 	return prCmd
 }
