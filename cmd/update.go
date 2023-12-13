@@ -4,7 +4,8 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"github.com/alex-emery/release-notes/internal/model/wizard"
+	"github.com/alex-emery/release-notes/internal/wizard"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
@@ -14,12 +15,13 @@ func createUpdateCmd() *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Interactively update images in the k8s engine repo",
-		Run: func(cmd *cobra.Command, args []string) {
-			app := wizard.New(*repoPath)
-
-			if err := app.Run(); err != nil {
-				panic(err)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			m := wizard.NewModel(*repoPath)
+			p := tea.NewProgram(m)
+			if _, err := p.Run(); err != nil {
+				return err
 			}
+			return nil
 		},
 	}
 
