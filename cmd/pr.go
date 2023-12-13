@@ -8,9 +8,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/alex-emery/release-notes/internal/model/input"
 	"github.com/alex-emery/release-notes/pkg/git"
 	"github.com/alex-emery/release-notes/pkg/github"
-	"github.com/alex-emery/release-notes/pkg/input"
 	"github.com/alex-emery/release-notes/pkg/notes"
 	jira "github.com/andygrunwald/go-jira/v2/cloud"
 	"github.com/spf13/cobra"
@@ -89,7 +89,7 @@ If a repo is found further information is gathered based off the commits between
 			ghClient := github.New(logger, ghToken)
 
 			// ask the user to enter a title
-			title, err := input.Run("Enter a title for the PR: ")
+			title, err := input.Run("Enter a title for the PR: ", "title")
 			if err != nil {
 				logger.Fatal("failed to read title", zap.Error(err))
 			}

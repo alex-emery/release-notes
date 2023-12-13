@@ -127,7 +127,7 @@ func New(basepath string) *tview.Application {
 			}
 		})
 
-	app.SetRoot(pages, true)
+	app.SetRoot(pages, false)
 
 	return app
 }

@@ -10,28 +10,27 @@ import (
 type Model struct {
 	title     string
 	textInput textinput.Model
-	body      *string
+	body      string
 }
 
-func Run(title string) (string, error) {
-	body := new(string)
-	p := tea.NewProgram(New(title, body))
-	if _, err := p.Run(); err != nil {
+func Run(title, placeholder string) (string, error) {
+	p := tea.NewProgram(New(title, placeholder))
+	m, err := p.Run()
+	if err != nil {
 		return "", err
 	}
 
-	return *body, nil
+	return m.(Model).body, nil
 }
 
-func New(title string, body *string) Model {
+func New(title, placeholder string) Model {
 	ti := textinput.New()
 	ti.Focus()
 	ti.Width = 200
-
+	ti.Placeholder = placeholder
 	return Model{
 		title:     title,
 		textInput: ti,
-		body:      body,
 	}
 
 }
@@ -48,14 +47,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
 			value := m.textInput.Value()
-			*m.body = value
+			m.body = value
 			return m, tea.Quit
 		}
-
-		// We handle errors just like any other message
-		// case errMsg:
-		// 	m.err = msg
-		// 	return m, nil
 	}
 
 	m.textInput, cmd = m.textInput.Update(msg)
